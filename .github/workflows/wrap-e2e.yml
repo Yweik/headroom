@@ -1,41 +1,20 @@
-name: Wrap E2E
-
-on:
-  pull_request:
-    branches: [main]
-    paths:
-      - 'headroom/**'
-      - 'crates/**'
-      - 'docker/**'
-      - 'Dockerfile'
-      - 'e2e/**'
-      - 'scripts/install*'
-      - 'pyproject.toml'
-      - 'Cargo.toml'
-      - 'Cargo.lock'
-      - 'rust-toolchain.toml'
-      - 'uv.lock'
-      - 'sdk/typescript/**'
-      - 'plugins/openclaw/**'
-      - '.github/workflows/wrap-e2e.yml'
-  push:
-    branches: [main]
-  workflow_dispatch:
-
-concurrency:
-  group: wrap-e2e-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
-
+name: Build Win Wheel
+on: push
 jobs:
-  docker-wrap-e2e:
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-
+  build:
+    runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v6
-
-      - name: Build wrap e2e image
-        run: docker build -f e2e/wrap/Dockerfile -t headroom-wrap-e2e .
-
-      - name: Run wrap e2e container
-        run: docker run --rm headroom-wrap-e2e
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Install Maturin
+        run: pip install maturin
+      - name: Build
+        run: maturin build --release
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: win-wheel
+          path: target/wheels/*.whl
